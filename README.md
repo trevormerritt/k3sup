@@ -1,3 +1,9 @@
+# TREVORS FORK
+
+I wanted to be able to specify the version of k3sup from the install script.  This wasn't approved by the mainline project, so I have this fork with ONLY THAT SINGLE CHANGE.  Kinda silly but look at https://github.com/alexellis/k3sup/pull/348 or https://github.com/alexellis/k3sup/issues/349
+
+Oh well.
+
 # k3sup 🚀 (said 'ketchup')
 
 <img src="docs/assets/k3sup.png" width="20%" alt="k3sup logo">
