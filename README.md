@@ -4,6 +4,13 @@ I wanted to be able to specify the version of k3sup from the install script.  Th
 
 Oh well.
 
+
+```sh
+curl -sLS https://github.com/trevormerritt/k3sup/blob/master/get.sh | sh
+sudo install k3sup /usr/local/bin/
+
+```
+
 # k3sup 🚀 (said 'ketchup')
 
 <img src="docs/assets/k3sup.png" width="20%" alt="k3sup logo">
