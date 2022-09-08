@@ -21,42 +21,45 @@ The tool is written in Go and is cross-compiled for Linux, Windows, MacOS and ev
 
 How do you say it? Ketchup, as in tomato.
 
-[![Build
-Status](https://travis-ci.com/alexellis/k3sup.svg?branch=master)](https://travis-ci.com/alexellis/k3sup)
+[![Sponsor this](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&link=https://github.com/sponsors/alexellis)](https://github.com/sponsors/alexellis)
+[![build](https://github.com/alexellis/k3sup/actions/workflows/build.yaml/badge.svg)](https://github.com/alexellis/k3sup/actions/workflows/build.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/alexellis/k3sup)](https://goreportcard.com/report/github.com/alexellis/k3sup)
 [![GoDoc](https://godoc.org/github.com/alexellis/k3sup?status.svg)](https://godoc.org/github.com/alexellis/k3sup) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![GitHub All Releases](https://img.shields.io/github/downloads/alexellis/k3sup/total)
+![Downloads](https://img.shields.io/github/downloads/alexellis/k3sup/total)
 
 ## Contents:
 - [k3sup 🚀 (said 'ketchup')](#k3sup--said-ketchup)
+  - [Contents:](#contents)
   - [What's this for? 💻](#whats-this-for-)
+  - [Do you love `k3sup`?](#do-you-love-k3sup)
     - [Uses](#uses)
     - [Bootstrapping Kubernetes](#bootstrapping-kubernetes)
   - [Download `k3sup` (tl;dr)](#download-k3sup-tldr)
     - [A note for Windows users](#a-note-for-windows-users)
   - [Demo 📼](#demo-)
-  - [Who is the author? 👏](#who-is-the-author-)
   - [Usage ✅](#usage-)
-    - [Pre-requisites for k3sup agents and servers](#pre-requisites-for-k3sup-servers-and-agents)
+  - [Pre-requisites for k3sup servers and agents](#pre-requisites-for-k3sup-servers-and-agents)
     - [👑 Setup a Kubernetes *server* with `k3sup`](#-setup-a-kubernetes-server-with-k3sup)
-    - [Advanced KUBECONFIG options](#merging-clusters-into-your-kubeconfig)
+    - [Merging clusters into your KUBECONFIG](#merging-clusters-into-your-kubeconfig)
     - [😸 Join some agents to your Kubernetes server](#-join-some-agents-to-your-kubernetes-server)
+    - [Use your hardware authentication / 2FA or SSH Agent](#use-your-hardware-authentication--2fa-or-ssh-agent)
     - [Create a multi-master (HA) setup with external SQL](#create-a-multi-master-ha-setup-with-external-sql)
     - [Create a multi-master (HA) setup with embedded etcd](#create-a-multi-master-ha-setup-with-embedded-etcd)
     - [👨‍💻 Micro-tutorial for Raspberry Pi (2, 3, or 4) 🥧](#-micro-tutorial-for-raspberry-pi-2-3-or-4-)
   - [Caveats on security](#caveats-on-security)
-  - [If your ssh-key is password-protected](#if-your-ssh-key-is-password-protected)
   - [Contributing](#contributing)
-    - [Insiders Subscription ☕️ 👏](#insiders-subscription-️-)
     - [Blog posts & tweets](#blog-posts--tweets)
     - [Contributing via GitHub](#contributing-via-github)
     - [License](#license)
   - [📢 What are people saying about `k3sup`?](#-what-are-people-saying-about-k3sup)
   - [Similar tools & glossary](#similar-tools--glossary)
-  - [Troubleshooting](#troubleshooting)
+  - [Troubleshooting and support](#troubleshooting-and-support)
+    - [Maybe the problem is with K3s?](#maybe-the-problem-is-with-k3s)
+    - [Common issues](#common-issues)
+    - [Support and k3sup for commercial use](#support-and-k3sup-for-commercial-use)
     - [Getting access to your KUBECONFIG](#getting-access-to-your-kubeconfig)
     - [Smart cards and 2FA](#smart-cards-and-2fa)
-    - [Misc note on iptables](#misc-note-on-iptables)
+    - [Misc note on `iptables`](#misc-note-on-iptables)
 
 ## What's this for? 💻
 
@@ -65,6 +68,20 @@ This tool uses `ssh` to install `k3s` to a remote Linux host. You can also use i
 You may wonder why a tool like this needs to exist when you can do this sort of thing with bash.
 
 k3sup was developed to automate what can be a very manual and confusing process for many developers, who are already short on time. Once you've provisioned a VM with your favourite tooling, `k3sup` means you are only 60 seconds away from running `kubectl get pods` on your own computer. If you are a local computer, you can bypass SSH with `k3sup install --local`
+
+## Do you love `k3sup`?
+
+<a href="https://github.com/sponsors/alexellis/">
+<img alt="Sponsor this project" src="https://github.com/alexellis/alexellis/blob/master/sponsor-today.png" width="90%">
+</a>
+
+`k3sup` was created by [Alex Ellis](https://github.com/users/alexellis/sponsorship) - the founder of [OpenFaaS &reg;](https://www.openfaas.com/) & [inlets](https://inlets.dev/). Alex is also an active part of the Docker & Kubernetes community as a [CNCF Ambassador](https://www.cncf.io/people/ambassadors/).
+
+If you've benefitted from his open source projects or blog posts in some way, then and join dozens of other developers sponsoring him today.
+
+A monthly sponsorship is required to receive any form of support such as Issues or Pull Requests.
+
+[Sponsor alexellis on GitHub](https://github.com/users/alexellis/sponsorship)
 
 ### Uses
 
@@ -78,10 +95,6 @@ k3sup was developed to automate what can be a very manual and confusing process 
 
 ![Conceptual architecture](./docs/k3sup-cloud.png)
 *Conceptual architecture, showing `k3sup` running locally against any VM such as AWS EC2 or a VPS such as DigitalOcean.*
-
-## Do you love `k3sup`?
-
-k3sup is free and open source, but requires time and effort to support users and build and test new features. Support this project via [GitHub Sponsors](https://github.com/users/alexellis/sponsorship).
 
 ## Download `k3sup` (tl;dr)
 
@@ -108,14 +121,6 @@ In the demo I install Kubernetes (`k3s`) onto two separate machines and get my `
 Watch the demo:
 
 [![asciicast](https://asciinema.org/a/262630.svg)](https://asciinema.org/a/262630)
-
-## Who is the author? 👏
-
-`k3sup` is Open Source Software (OSS) and was created by [Alex Ellis](https://www.alexellis.io/) - the founder of [OpenFaaS &reg;](https://www.openfaas.com/) & [inlets](https://inlets.dev/). Alex is also an active part of the Docker & Kubernetes community as a [CNCF Ambassador](https://www.cncf.io/people/ambassadors/).
-
-If you've benefitted from his open source projects or blog posts in some way, then and join dozens of other developers today by buying an Insiders Subscription 🏆 via GitHub Sponsors.
-
-* [Sponsor on GitHub](https://github.com/users/alexellis/sponsorship)
 
 ## Usage ✅
 
@@ -164,12 +169,14 @@ Other options for `install`:
 * `--cluster` - start this server in clustering mode using embedded etcd (embedded HA)
 * `--skip-install` - if you already have k3s installed, you can just run this command to get the `kubeconfig`
 * `--ssh-key` - specify a specific path for the SSH key for remote login
+* `--local` - Perform a local install without using ssh
 * `--local-path` - default is `./kubeconfig` - set the file where you want to save your cluster's `kubeconfig`.  By default this file will be overwritten.
 * `--merge` - Merge config into existing file instead of overwriting (e.g. to add config to the default kubectl config, use `--local-path ~/.kube/config --merge`).
 * `--context` - default is `default` - set the name of the kubeconfig context.
 * `--ssh-port` - default is `22`, but you can specify an alternative port i.e. `2222`
 * `--k3s-extra-args` - Optional extra arguments to pass to k3s installer, wrapped in quotes, i.e. `--k3s-extra-args '--no-deploy traefik'` or `--k3s-extra-args '--docker'`. For multiple args combine then within single quotes `--k3s-extra-args '--no-deploy traefik --docker'`.
-* `--k3s-version` - set the specific version of k3s, i.e. `v0.9.1`
+* `--k3s-version` - set the specific version of k3s, i.e. `v1.21.1`
+* `--k3s-channel` - set a specific version of k3s based upon a channel i.e. `stable`
 - `--ipsec` - Enforces the optional extra argument for k3s: `--flannel-backend` option: `ipsec`
 * `--print-command` - Prints out the command, sent over SSH to the remote computer
 * `--datastore` - used to pass a SQL connection-string to the `--datastore-endpoint` flag of k3s. You must use [the format required by k3s in the Rancher docs](https://rancher.com/docs/k3s/latest/en/installation/ha/).
@@ -202,7 +209,7 @@ k3sup install \
   --context my-k3s
 ```
 
-Here we set a context of `my-k3s` and also merge into our main local `KUBECONFIG` file, so we could run `kubectl config set-context my-k3s` or `kubectx my-k3s`.
+Here we set a context of `my-k3s` and also merge into our main local `KUBECONFIG` file, so we could run `kubectl config use-context my-k3s` or `kubectx my-k3s`.
 
 ### 😸 Join some agents to your Kubernetes server
 
@@ -226,7 +233,29 @@ export USER=root
 k3sup join --ip $AGENT_IP --server-ip $SERVER_IP --user $USER
 ```
 
+Please note that if you are using different usernames for SSH'ing to the agent and the server that you must provide the username for the server via the `--server-user` parameter.
+
 That's all, so with the above command you can have a two-node cluster up and running, whether that's using VMs on-premises, using Raspberry Pis, 64-bit ARM or even cloud VMs on EC2.
+
+### Use your hardware authentication / 2FA or SSH Agent
+
+You may wish to use the `ssh-agent` utility if:
+
+* Your SSH key is protected by a password, and you don't want to type it in for each k3sup command
+* You use a hardware authentication device key like a [Yubico YubiKey](https://amzn.to/3ApXR82) to authenticate SSH sessions
+
+Run the following to set `SSH_AUTH_SOCK`:
+
+```
+$ eval $(ssh-agent)
+Agent pid 2641757
+```
+
+Optionally, if your key is encrypted, run: `ssh-add ~/.ssh/id_rsa`
+
+Now run any `k3sup` command, and your SSH key will be requested from the ssh-agent instead of from the usual location.
+
+You can also specify an SSH key with `--ssh-key` if you want to use a specific key-pair.
 
 ### Create a multi-master (HA) setup with external SQL
 
@@ -253,6 +282,20 @@ export DATASTORE="mysql://doadmin:80624d3936dfc8d2e80593@tcp(db-mysql-lon1-90578
 
 You can prefix this command with `  ` two spaces, to prevent it being cached in your bash history.
 
+Generate a token used to encrypt data (If you already have a running node this can be retrieved by logging into a running node and looking in `/var/lib/rancher/k3s/server/token`)
+
+```bash
+# Best option for a token:
+export TOKEN=$(openssl rand -base64 64)
+
+# Fallback for no openssl, on a Linux host:
+export TOKEN=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 64)
+
+# Failing that, then try:
+export TOKEN=$(head -c 64 /dev/urandom|shasum| cut -d - -f 1)
+```
+
+
 * Create three VMs
 
 Imagine we have the following three VMs, two will be servers, and one will be an agent.
@@ -266,13 +309,13 @@ export AGENT1=104.248.137.25
 * Install the first server
 
 ```bash
-k3sup install --user root --ip $SERVER1 --datastore="${DATASTORE}"
+k3sup install --user root --ip $SERVER1 --datastore="${DATASTORE}" --token=${TOKEN}
 ```
 
 * Install the second server
 
 ```bash
-k3sup install --user root --ip $SERVER2 --datastore="${DATASTORE}"
+k3sup install --user root --ip $SERVER2 --datastore="${DATASTORE}" --token=${TOKEN}
 ```
 
 * Join the first agent
@@ -282,6 +325,8 @@ You can join the agent to either server, the datastore is not required for this 
 ```bash
 k3sup join --user root --server-ip $SERVER1 --ip $AGENT1
 ```
+
+Please note that if you are using different usernames for SSH'ing to the agent and the server that you must provide the username for the server via the `--server-user` parameter.
 
 * Additional steps
 
@@ -426,7 +471,7 @@ In a few moments you will have Kubernetes up and running on your Raspberry Pi 2,
 
 * Find the RPi IP with `ping -c raspberrypi.local`, then set `export SERVER_IP=""` with the IP
 
-* Enable container features in the kernel, by editing `/boot/cmdline.txt`
+* Enable container features in the kernel, by editing `/boot/cmdline.txt` (or `/boot/firmware/cmdline.txt` on Ubuntu)
 
 * Add the following to the end of the line: ` cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory`
 
@@ -459,31 +504,7 @@ If you are using public cloud, then make sure you see the notes from the Rancher
 
 k3s docs: [k3s configuration / open ports](https://rancher.com/docs/k3s/latest/en/installation/installation-requirements/#networking)
 
-## If your ssh-key is password-protected
-
-If the ssh-key is encrypted the first step is to try to connect to the ssh-agent. If this works, it will be used to connect to the server.
-If the ssh-agent is not running, the user will be prompted for the password of the ssh-key.
-
-On most Linux systems and MacOS, ssh-agent is automatically configured and executed at login. No additional actions are required to use it.
-
-To start the ssh-agent manually and add your key run the following commands:
-
-```bash
-eval `ssh-agent`
-ssh-add ~/.ssh/id_rsa
-```
-
-You can now just run k3sup as usual. No special parameters are necessary.
-
-```bash
-k3sup --ip $IP --user user
-```
-
 ## Contributing
-
-### Sponsor on GitHub ☕️ 👏
-
-k3sup is free and open source, but requires time and effort to support users and build and test new features. Support this project via [GitHub Sponsors](https://github.com/users/alexellis/sponsorship).
 
 ### Blog posts & tweets
 
@@ -491,7 +512,7 @@ Blogs posts, tutorials, and Tweets about k3sup (`#k3sup`) are appreciated. Pleas
 
 ### Contributing via GitHub
 
-Before contributing code, please see the [CONTRIBUTING guide](https://github.com/alexellis/inlets/blob/master/CONTRIBUTING.md). Note that k3sup uses the same guide as [inlets.dev](https://inlets.dev/).
+Before contributing code, please see the [CONTRIBUTING guide](https://github.com/alexellis/arkade/blob/master/CONTRIBUTING.md). Note that k3sup uses the same guide [arkade](https://arkade.dev)
 
 Both Issues and PRs have their own templates. Please fill out the whole template.
 
@@ -598,6 +619,8 @@ MIT
 
 * [Kubernetes Cluster with Rancher on Windows using K3s](https://adyanth.site/posts/kubernetes-cluster-on-windows/) by Adyanth H
 
+* [k3s in LXC on Proxmox with k3sup by Todd Edwards](https://gist.github.com/triangletodd/02f595cd4c0dc9aac5f7763ca2264185)
+
 Checkout the [Announcement tweet](https://twitter.com/alexellisuk/status/1162272786250735618?s=20)
 
 ## Similar tools & glossary
@@ -616,23 +639,44 @@ Related tools:
 * [k3v](https://github.com/ibuildthecloud/k3v) - "virtual kubernetes" - a very early PoC from the author of k3s aiming to slice up a single cluster for multiple tenants
 * [k3sup-multipass](https://github.com/matti/k3sup-multipass) - a helper to launch single node k3s cluster with one command using a [multipass](https://multipass.run) VM and optionally proxy the ingress to localhost for easier development.
 
-## Troubleshooting
+## Troubleshooting and support
 
-If you're having issues, it's likely that this is a problem with K3s, and not with K3sup. How do we know that? Mostly from past issues.
+### Maybe the problem is with K3s?
+
+If you're having issues, it's likely that this is a problem with K3s, and not with k3sup. How do we know that? K3sup is a very mature project and has a few use-cases that it generally performs very well.
 
 Rancher provides support for K3s [on their Slack](https://slack.rancher.io/) in the `#k3s` channel. This should be your first port of call. Your second port of call is to raise an issue with the K3s maintainers in the [K3s repo](https://github.com/k3s-io/k3s/issues)
 
-Common issues:
+Do you want to install a specific version of K3s? See `k3sup install --help` and the `--k3s-version` and `--k3s-channel` flags.
 
-* Raspberry Pi - you haven't updated cmdline.txt to enable cgroups for CPU and memory
-* `sudo: a terminal is required to read the password` - see the [Pre-requisites for k3sup agents and servers](#pre-requisites-for-k3sup-servers-and-agents)
+Is your system ready to run Kubernetes? K3s requires certain Kernel modules to be available, run `k3s check-config` and check the output. Alex tests K3sup with Raspberry Pi OS and Ubuntu LTS on a regular basis.
 
-* K3s server didn't start. Log in and run `sudo systemctl -u k3s`
-* The K3s agent didn't start. Log in and run `sudo systemctl -u k3s-agent`
+### Common issues
+
+The most common problem is that you missed a step, fortunately it's relatively easy to get the logs from the K3s service and it should tell you what's wrong.
+
+* For the Raspberry Pi you probably haven't updated `cmdline.txt` to enable cgroups for CPU and memory. Update it as per the instructions in this file.
+* You ran `kubectl` on a node. Don't do this. k3sup copies the file to your local workstation. Don't log into agents or servers other than to check logs / upgrade the system.
+* `sudo: a terminal is required to read the password` - setup password-less `sudo` on your hosts, see also:[Pre-requisites for k3sup agents and servers](#pre-requisites-for-k3sup-servers-and-agents)
+* You want to install directly on a server, without using SSH. See also: `k3sup install --local` which doesn't use SSH, but executes the commands directly on a host.
+
+* K3s server didn't start. Log in and run `sudo systemctl status k3s` or `sudo journalctl -u k3s` to see the logs for the service.
+* The K3s agent didn't start. Log in and run `sudo systemctl status k3s-agent`
 * You tried to remove and re-add a server in an etcd cluster and it failed. This is a known issue, see the [K3s issue tracker](https://github.com/k3s-io/k3s/issues).
 * You tried to use an unsupported version of a database for HA. See [this list from Rancher](https://rancher.com/docs/k3s/latest/en/installation/datastore/)
+* Your tried to join a node to the cluster and got an error "ssh: handshake failed". This is probably one of three possibilities:
+  - You did not run `ssh-copy-id`. Try to run it and check if you can log in to the server and the new node without a password prompt using regular `ssh`.
+  - You have an RSA public key. There is an [underlying issue in a Go library](https://github.com/golang/go/issues/39885) which is [referred here](https://github.com/alexellis/k3sup/issues/63). Please provide the additional parameter `--ssh-key ~/.ssh/id_rsa` (or wherever your private key lives) until the issue is resolved.
+  - You are using different usernames for SSH'ing to the server and the node to be added. In that case, playe provide the username for the server via the `--server-user` parameter.
+* Your `.ssh/config` file isn't being used by K3sup. K3sup does not use the config file used by the `ssh` command-line, but instead uses CLI flags, run `k3sup install/join --help` to learn which are supported.
 
-Finally, if everything points to an issue that you can clearly reproduce with k3sup, feel free to open an issue here. To make sure you get a response, fill out the whole template and answer all the questions.
+### Support and k3sup for commercial use
+
+* K3sup doesn't use a declarative YAML file to setup all my hosts. This is by design, feel free to write a very short bash script instead, it will be equivalent, since `k3sup install/join` can be run multiple times without side-effects. 
+* You want to setup a cluster using an SSH bastion host. This is a premium feature and requires a license.
+* You want to install K3s into an airgapped environment. This is a premium feature and requires a license.
+
+Finally, if you need any form of technical support, you must [first become a GitHub Sponsor](https://github.com/sponsors/alexellis) before raising an issue. All changes to K3sup must be proposed in an issue before a PR is sent, PRs without approved issues will be closed without comment.
 
 ### Getting access to your KUBECONFIG
 
@@ -644,7 +688,7 @@ If you've lost your kubeconfig, you can use `k3sup install --skip-install`. See 
 
 ### Smart cards and 2FA
 
-> Warning: issues requesting support for smart cards / 2FA will be closed immediately. The feature has been proven to work, and is provided as-is. We do not have time to debug your system.
+> Warning: issues requesting support for smart cards / 2FA will be closed immediately. The feature has been proven to work, and is provided as-is.
 
 You can use a smart card or 2FA security key such as a Yubikey. You must have your ssh-agent configured correctly, at that point k3sup will defer to the agent to make connections on MacOS and Linux. [Find out more](https://github.com/alexellis/k3sup/pull/312)
 

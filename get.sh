@@ -9,8 +9,8 @@ export VERIFY_CHECKSUM=0
 export ALIAS=""
 export OWNER=alexellis
 export REPO=k3sup
-export SUCCESS_CMD="$REPO version"
 export BINLOCATION="/usr/local/bin"
+export SUCCESS_CMD="$BINLOCATION/$REPO version"
 
 ###############################
 # Content common across repos #
@@ -29,7 +29,7 @@ if [ ! $version ]; then
     echo "3. chmod +x ./$REPO"
     echo "4. mv ./$REPO $BINLOCATION"
     if [ -n "$ALIAS_NAME" ]; then
-        echo "5. ln -sf $BINLOCATION/$REPO /usr/local/bin/$ALIAS_NAME"
+        echo "5. ln -sf $BINLOCATION/$REPO $BINLOCATION/$ALIAS_NAME"
     fi
     exit 1
 fi
@@ -72,7 +72,18 @@ getPackage() {
     suffix=""
     case $uname in
     "Darwin")
-    suffix="-darwin"
+        arch=$(uname -m)
+        echo $arch
+        case $arch in
+        "x86_64")
+        suffix="-darwin"
+        ;;
+        esac
+        case $arch in
+        "arm64")
+        suffix="-darwin-arm64"
+        ;;
+        esac
     ;;
     "MINGW"*)
     suffix=".exe"
@@ -181,8 +192,7 @@ getPackage() {
 thanks() {
     echo
     echo "================================================================"
-    echo "  Thanks for choosing k3sup."
-    echo "  Support the project through GitHub Sponsors"
+    echo "  alexellis's work on k3sup needs your support"
     echo "" 
     echo "  https://github.com/sponsors/alexellis" 
     echo "================================================================"

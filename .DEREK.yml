@@ -1,23 +1,12 @@
 curators:
  - alexellis
- - Waterdrips
- - utsavanand2
+ - welteki
 
 features:
  - dco_check
  - comments
  - pr_description_required
  - release_notes
-# - hacktoberfest
-# - no_newbies
-
-required_in_issues:
-  - "## Are you a GitHub Sponsor (Yes/No?)"
-  - "## Expected Behaviour"
-  - "## Current Behaviour"
-  - "## Possible Solution"
-  - "## Steps to Reproduce"
-  - "## Your Environment"
 
 custom_messages:
   - name: k3s
@@ -32,14 +21,6 @@ custom_messages:
            link it back to this issue for tracking purposes. If Rancher determines that this is
            actually an error with k3sup, then please feel free to return and re-open the issue, or
            to comment again.
-
-  - name: slack
-    value: |
-           --
-           The k3sup uses the #general channel in the OpenFaaS Slack
-           community.
-           Join Slack to connect with the community
-           https://docs.openfaas.com/community
 
   - name: template
     value: |
@@ -74,4 +55,4 @@ custom_messages:
 
            Thank you for your contribution.
 
-contributing_url: https://github.com/openfaas/faas/blob/master/CONTRIBUTING.md
+contributing_url: https://github.com/alexellis/arkade/blob/master/CONTRIBUTING.md

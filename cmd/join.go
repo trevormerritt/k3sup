@@ -3,21 +3,16 @@ package cmd
 import (
 	"fmt"
 	"net"
+	"path/filepath"
 	"runtime"
 	"strings"
 
+	"github.com/alexellis/k3sup/pkg"
 	operator "github.com/alexellis/k3sup/pkg/operator"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
-
-// SupportMsg is aimed to inform the many hundreds of users of k3sup
-// that they can do their part to support the project's development
-// and maintenance.
-const SupportMsg = `Give your support to k3sup via GitHub Sponsors:
-
-https://github.com/sponsors/alexellis`
 
 // MakeJoin creates the join command
 func MakeJoin() *cobra.Command {
@@ -26,9 +21,24 @@ func MakeJoin() *cobra.Command {
 		Short: "Install the k3s agent on a remote host and join it to an existing server",
 		Long: `Install the k3s agent on a remote host and join it to an existing server
 
-` + SupportMsg,
-		Example: `  k3sup join --user root --server-ip IP --ip IP
+` + pkg.SupportMessageShort + `
+`,
+		Example: `  # Install K3s joining a cluster as an agent
+  k3sup join \
+    --user AGENT_USER \
+    --ip AGENT_IP \
+    --server-ip IP \
+    --server-user SERVER_USER
 
+  # Install K3s joining a cluster as another server
+  k3sup join \
+    --user AGENT_USER \
+    --ip AGENT_IP \
+    --server \
+    --server-ip IP \
+    --server-user SERVER_USER
+
+  # Join whilst specifying a channel for the k3sup version
   k3sup join --user pi \
     --server-host HOST \
     --host HOST \
@@ -58,6 +68,8 @@ func MakeJoin() *cobra.Command {
 	command.Flags().String("k3s-version", "", "Set a version to install, overrides k3s-channel")
 	command.Flags().String("k3s-channel", PinnedK3sChannel, "Release channel: stable, latest, or i.e. v1.19")
 
+	command.Flags().String("server-data-dir", "/var/lib/rancher/k3s/", "Override the path used to fetch the node-token from the server")
+
 	command.RunE = func(command *cobra.Command, args []string) error {
 		fmt.Printf("Running: k3sup join\n")
 
@@ -72,6 +84,18 @@ func MakeJoin() *cobra.Command {
 		}
 		if len(host) == 0 {
 			host = ip.String()
+		}
+
+		dataDir, err := command.Flags().GetString("server-data-dir")
+		if err != nil {
+			return err
+		}
+		if len(dataDir) == 0 {
+			return fmt.Errorf("--server-data-dir must be set")
+		}
+
+		if !strings.HasPrefix(dataDir, "/") {
+			return fmt.Errorf("--server-data-dir must begin with /")
 		}
 
 		serverIP, err := command.Flags().GetIP("server-ip")
@@ -194,7 +218,7 @@ func MakeJoin() *cobra.Command {
 
 		defer sshOperator.Close()
 
-		getTokenCommand := fmt.Sprintf(sudoPrefix + "cat /var/lib/rancher/k3s/server/node-token\n")
+		getTokenCommand := fmt.Sprintf("%scat %s\n", sudoPrefix, filepath.Join(dataDir, "/server/node-token"))
 		if printCommand {
 			fmt.Printf("ssh: %s\n", getTokenCommand)
 		}
@@ -223,30 +247,40 @@ func MakeJoin() *cobra.Command {
 			boostrapErr = setupAgent(serverHost, host, port, user, sshKeyPath, joinToken, k3sExtraArgs, k3sVersion, k3sChannel, printCommand)
 		}
 
+		if boostrapErr == nil {
+			fmt.Printf("\n%s\n", pkg.SupportMessageShort)
+		}
+
 		return boostrapErr
 	}
 
 	command.PreRunE = func(command *cobra.Command, args []string) error {
+
 		_, err := command.Flags().GetIP("ip")
 		if err != nil {
 			return err
 		}
+
 		_, err = command.Flags().GetIP("server-ip")
 		if err != nil {
 			return err
 		}
+
 		_, err = command.Flags().GetString("host")
 		if err != nil {
 			return err
 		}
+
 		_, err = command.Flags().GetString("server-host")
 		if err != nil {
 			return err
 		}
+
 		_, err = command.Flags().GetInt("ssh-port")
 		if err != nil {
 			return err
 		}
+
 		return nil
 	}
 

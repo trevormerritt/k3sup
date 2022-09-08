@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/alexellis/k3sup/pkg"
 	operator "github.com/alexellis/k3sup/pkg/operator"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -26,6 +27,7 @@ var kubeconfig []byte
 
 type k3sExecOptions struct {
 	Datastore    string
+	Token        string
 	ExtraArgs    string
 	FlannelIPSec bool
 	NoExtras     bool
@@ -47,18 +49,39 @@ func MakeInstall() *cobra.Command {
 		Short: "Install k3s on a server via SSH",
 		Long: `Install k3s on a server via SSH.
 
-` + SupportMsg,
-		Example: `  k3sup install --ip IP --user USER
+` + pkg.SupportMessageShort + `
+`,
+		Example: `  # Simple installation of stable version, outputting a
+  # kubeconfig to the working directory
+  k3sup install --ip IP --user USER
 
+  # Merge kubeconfig into local file under custom context
+  k3sup install \
+    --host HOST \
+    --merge \
+    --local-path $HOME/.kube/kubeconfig \
+    --context k3s-prod-eu-1
+
+  # Only download kubeconfig
+  k3sup install --ip IP \
+    --user USER \
+    --skip-install
+
+  # Install a specific version on local machine without using SSH
   k3sup install --local --k3s-version v1.19.7
-  
-  k3sup install --ip IP --cluster
-  
-  k3sup install --ip IP --k3s-channel latest
-  k3sup install --host HOST --k3s-channel stable
 
+  # Install, passing extra args to K3s
+  k3sup install --local --k3s-extra-args="--data-dir /mnt/ssd/k3s"
+
+  # Start a cluster with embedded etcd
+  k3sup install --host HOST --cluster
+
+  # Install from a specific channel
+  k3sup install --host HOST --k3s-channel [latest|stable]
+
+  # Use a custom path to your SSH key
   k3sup install --host HOST \
-    --ssh-key $HOME/ec2-key.pem --user ubuntu`,
+    --ssh-key $HOME/ec2-key.pem`,
 		SilenceUsage: true,
 	}
 
@@ -66,7 +89,6 @@ func MakeInstall() *cobra.Command {
 	command.Flags().String("user", "root", "Username for SSH login")
 
 	command.Flags().String("host", "", "Public hostname of node on which to install agent")
-	command.Flags().String("host-ip", "", "Public hostname of an existing k3s server")
 
 	command.Flags().String("ssh-key", "~/.ssh/id_rsa", "The ssh key to use for remote login")
 	command.Flags().Int("ssh-port", 22, "The port on which to connect for ssh")
@@ -86,6 +108,7 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 
 	command.Flags().Bool("print-command", false, "Print a command that you can use with SSH to manually recover from an error")
 	command.Flags().String("datastore", "", "connection-string for the k3s datastore to enable HA - i.e. \"mysql://username:password@tcp(hostname:3306)/database-name\"")
+	command.Flags().String("token", "", "the token used to encrypt the datastore, must be the same token for all nodes")
 
 	command.Flags().String("k3s-version", "", "Set a version to install, overrides k3s-channel")
 	command.Flags().String("k3s-extra-args", "", "Additional arguments to pass to k3s installer, wrapped in quotes (e.g. --k3s-extra-args '--no-deploy servicelb')")
@@ -94,13 +117,24 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 	command.Flags().String("tls-san", "", "Use an additional IP or hostname for the API server")
 
 	command.PreRunE = func(command *cobra.Command, args []string) error {
-		_, err := command.Flags().GetIP("ip")
+		local, err := command.Flags().GetBool("local")
 		if err != nil {
 			return err
 		}
-		_, err = command.Flags().GetIP("host")
-		if err != nil {
-			return err
+
+		if !local {
+			_, err = command.Flags().GetString("host")
+			if err != nil {
+				return err
+			}
+
+			if _, err := command.Flags().GetIP("ip"); err != nil {
+				return err
+			}
+
+			if _, err := command.Flags().GetInt("ssh-port"); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -158,6 +192,7 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 		if err != nil {
 			return err
 		}
+
 		host, err := command.Flags().GetString("host")
 		if err != nil {
 			return err
@@ -165,6 +200,7 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 		if len(host) == 0 {
 			host = ip.String()
 		}
+
 		log.Println(host)
 
 		cluster, _ := command.Flags().GetBool("cluster")
@@ -183,6 +219,10 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 			return err
 		}
 
+		token, err := command.Flags().GetString("token")
+		if err != nil {
+			return err
+		}
 		if len(datastore) > 0 {
 			if strings.Index(datastore, "ssl-mode=REQUIRED") > -1 {
 				return fmt.Errorf("remove ssl-mode=REQUIRED from your datastore string, it is not supported by the k3s syntax")
@@ -190,11 +230,16 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 			if strings.Index(datastore, "mysql") > -1 && strings.Index(datastore, "tcp") == -1 {
 				return fmt.Errorf("you must specify the mysql host as tcp(host:port) or tcp(ip:port), see the k3s docs for more: https://rancher.com/docs/k3s/latest/en/installation/ha")
 			}
+
+			if token == "" {
+				return fmt.Errorf("you must provide the token when using an external datastore. Make sure to use the same token as other nodes")
+			}
 		}
 
 		installk3sExec := makeInstallExec(cluster, host, tlsSAN,
 			k3sExecOptions{
 				Datastore:    datastore,
+				Token:        token,
 				FlannelIPSec: flannelIPSec,
 				NoExtras:     k3sNoExtras,
 				ExtraArgs:    k3sExtraArgs,
@@ -320,17 +365,6 @@ Provide the --local-path flag with --merge if a kubeconfig already exists in som
 		return nil
 	}
 
-	command.PreRunE = func(command *cobra.Command, args []string) error {
-		if _, err := command.Flags().GetIP("ip"); err != nil {
-			return err
-		}
-
-		if _, err := command.Flags().GetInt("ssh-port"); err != nil {
-			return err
-		}
-
-		return nil
-	}
 	return command
 }
 
@@ -352,7 +386,7 @@ func obtainKubeconfig(operator operator.CommandOperator, getConfigcommand, host,
 		fmt.Printf("Result: %s %s\n", string(res.StdOut), string(res.StdErr))
 	}
 
-	absPath, _ := filepath.Abs(localKubeconfig)
+	absPath, _ := filepath.Abs(expandPath(localKubeconfig))
 
 	kubeconfig := rewriteKubeconfig(string(res.StdOut), host, context)
 
@@ -380,12 +414,15 @@ func writeConfig(path string, data []byte, context string, suppressMessage bool)
 
 # Test your cluster with:
 export KUBECONFIG=%s
-kubectl config set-context %s
+kubectl config use-context %s
 kubectl get node -o wide
+
+%s
 `,
 			absPath,
 			absPath,
-			context)
+			context,
+			pkg.SupportMessageShort)
 	}
 
 	if err := ioutil.WriteFile(absPath, []byte(data), 0600); err != nil {
@@ -399,31 +436,46 @@ func mergeConfigs(localKubeconfigPath, context string, k3sconfig []byte) ([]byte
 	// Create a temporary kubeconfig to store the config of the newly create k3s cluster
 	file, err := ioutil.TempFile(os.TempDir(), "k3s-temp-*")
 	if err != nil {
-		return nil, fmt.Errorf("Could not generate a temporary file to store the kuebeconfig: %s", err)
+		return nil, fmt.Errorf("could not generate a temporary file to store the kubeconfig: %w", err)
 	}
-	defer file.Close()
 
 	if err := writeConfig(file.Name(), []byte(k3sconfig), context, true); err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("Merging with existing kubeconfig at %s\n", localKubeconfigPath)
+	fmt.Printf("Merging config into file: %s\n", localKubeconfigPath)
 
-	// Append KUBECONFIGS in ENV Vars
-	appendKubeConfigENV := fmt.Sprintf("KUBECONFIG=%s:%s", localKubeconfigPath, file.Name())
+	// Pick between ; or : for path concatenation
+	var joinChar string
+	if runtime.GOOS == "windows" {
+		joinChar = ";"
+	} else {
+		joinChar = ":"
+	}
+
+	appendKubeConfigENV := fmt.Sprintf("KUBECONFIG=%s%s%s",
+		localKubeconfigPath,
+		joinChar,
+		file.Name())
 
 	// Merge the two kubeconfigs and read the output into 'data'
 	cmd := exec.Command("kubectl", "config", "view", "--merge", "--flatten")
 	cmd.Env = append(os.Environ(), appendKubeConfigENV)
 	data, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("Could not merge kubeconfigs: %s", err)
+		return nil, fmt.Errorf("could not merge kubeconfig: %w", err)
+	}
+
+	if err := file.Close(); err != nil {
+		return nil, fmt.Errorf("could not close temporary kubeconfig file: %s %w",
+			file.Name(), err)
 	}
 
 	// Remove the temporarily generated file
 	err = os.Remove(file.Name())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not remove temporary kubeconfig file: %s", file.Name())
+		return nil, fmt.Errorf("could not remove temporary kubeconfig file: %s %w",
+			file.Name(), err)
 	}
 
 	return data, nil
@@ -524,6 +576,7 @@ func makeInstallExec(cluster bool, host, tlsSAN string, options k3sExecOptions) 
 	extraArgs := []string{}
 	if len(options.Datastore) > 0 {
 		extraArgs = append(extraArgs, fmt.Sprintf("--datastore-endpoint %s", options.Datastore))
+		extraArgs = append(extraArgs, fmt.Sprintf("--token %s", options.Token))
 	}
 	if options.FlannelIPSec {
 		extraArgs = append(extraArgs, "--flannel-backend ipsec")
